@@ -101,7 +101,7 @@ function ProtectPanel({ detected, detectedRule, onEvaluated }) {
         {rules.map((r) => <option key={String(r.id)} value={r.id ?? ""}>{r.label}</option>)}
       </select>
       <button type="button" onClick={run} data-testid="protect-run">Run the session-start evaluation</button>
-      {result && <Json value={result.botDetection} label="botDetection (mock)" testId="protect-result" />}
+      {result && <Json value={result.botDetection} label="botDetection (mock)" testId="protect-result" hot={["level", "status", "detectedRuleName"]} />}
     </section>
   );
 }
@@ -165,7 +165,7 @@ function ApprovalPanel({ onChanged, refreshSignal }) {
           </li>
         ))}
       </ul>
-      {challenges.all.length > 0 && <details><summary>{challenges.all.length} resolved challenge(s)</summary><Json value={challenges.all.filter((c) => c.status !== "pending")} label="Resolved challenges" /></details>}
+      {challenges.all.length > 0 && <details><summary>{challenges.all.length} resolved challenge(s)</summary><Json value={challenges.all.filter((c) => c.status !== "pending")} label="Resolved challenges" hot={["taskId", "tool", "status"]} /></details>}
     </section>
   );
 }
@@ -236,7 +236,7 @@ export default function PreferencesGate({ story, resetSignal, requestedId, onSel
       <section className="panel" aria-labelledby="prefs-h">
         <h2 id="prefs-h">Scenario preferences (decoded)</h2>
         <p className="tag tag--warn">{story.tokenLabel}</p>
-        <Json value={{ preferences: scenario.preferences, tool: scenario.tool, detectedAgent: scenario.detectedAgent }} label="Scenario input" testId="scenario-prefs" />
+        <Json value={{ preferences: scenario.preferences, tool: scenario.tool, detectedAgent: scenario.detectedAgent }} label="Scenario input" testId="scenario-prefs" hot={["allowedActions", "maxAmount", "unknownAgentPolicy", "tool", "detectedAgent"]} />
         <h3>What we know, and how well</h3>
         <ul className="facts" data-testid="facts">
           {story.facts.map((f) => <li key={f.id}><span className={STATUS_CLASS[f.status] || "tag"}>{f.status}</span> {visible(f.text)} <span className="muted">({visible(f.source)})</span></li>)}

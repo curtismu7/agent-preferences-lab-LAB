@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App, { BANNER_UNKNOWN } from "./App";
 import { labelOffsets } from "./components/PatternDiagram";
+import { setJsonView } from "./components/JsonPane";
 
 const STORY = {
   title: "t", intro: "intro text", banner: "SIMULATED: mock preferences", tokenLabel: "MOCK preferences and a MOCK Protect signal", hosted: false, verticals: ["retail", "health"],
@@ -94,7 +95,7 @@ function mockFetch() {
     return json({}, 404);
   });
 }
-beforeEach(() => { override = {}; mockFetch(); window.location.hash = ""; });
+beforeEach(() => { override = {}; mockFetch(); window.location.hash = ""; setJsonView("form"); });
 
 const ready = async () => { render(<App />); await screen.findByText("Permitted: read tool, read allowed"); await screen.findByTestId("verdict"); };
 
@@ -144,6 +145,16 @@ describe("preference gate tab", () => {
     await userEvent.click(screen.getByTestId("protect-run"));
     await waitFor(() => expect(screen.getByTestId("detection-flag")).toHaveTextContent("AI agent - Muse detected"));
     expect(screen.getByTestId("protect-result")).toHaveTextContent("AI agent - Muse detected");
+  });
+  it("JSON panes read Form | JSON: Form is the default, JSON shows the exact text", async () => {
+    await ready();
+    const box = screen.getByTestId("scenario-prefs-box");
+    expect(box).toHaveAttribute("data-view", "form");
+    expect(within(box).getByRole("button", { name: "Form" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(box).getByRole("button", { name: "JSON" })).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(within(box).getByRole("button", { name: "JSON" }));
+    expect(box).toHaveAttribute("data-view", "raw");
+    expect(screen.getByTestId("scenario-prefs").textContent).toBe(JSON.stringify({ preferences: STORY.scenarios[0].preferences, tool: "get_my_accounts", detectedAgent: false }, null, 2));
   });
   it("the approval panel approves a pending challenge", async () => {
     await ready();

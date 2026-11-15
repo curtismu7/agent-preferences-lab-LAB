@@ -5,6 +5,7 @@ import "./standalone-ui.css";
 import "./tokens.css";
 import "./top-menu/top-menu.css";
 import "./components/JsonPane.css";
+import "./components/VerifyMark.css";
 import "./app.css";
 
 // Mirror the OS colour scheme into data-theme (tokens.css keys dark mode on it), and follow changes live.

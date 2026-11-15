@@ -3,6 +3,7 @@ import PreferencesGate from "./components/PreferencesGate";
 import DiagramTab from "./components/DiagramTab";
 import TalkTrack from "./components/TalkTrack";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu";
+import VerifyMark from "./components/VerifyMark.jsx";
 import { getJson, resetWorkspace, setMode } from "./api";
 
 export const TABS = [
@@ -117,7 +118,9 @@ export default function App() {
               help={{ href: "https://github.com/curtismu7/agent-preferences-lab#readme" }}
               version={info?.version || null}
               onReset={reset}
-            />
+            >
+              <VerifyMark id="agent-preferences-lab" />
+            </TopMenu>
           </div>
         </div>
       </header>

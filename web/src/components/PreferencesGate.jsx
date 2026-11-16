@@ -133,7 +133,7 @@ function ToolCall({ tools, onResult }) {
           <input id="call-amount" type="number" min="0" value={amount === "" ? current.sampleAmount : amount} onChange={(e) => setAmount(e.target.value)} />
         </>
       )}
-      <button type="button" onClick={run} data-testid="call-run">Call as the agent</button>
+      <button type="button" className="primary" onClick={run} data-testid="call-run">Call as the agent</button>
       {fail && <p className="field-error" role="alert">{fail}</p>}
     </section>
   );

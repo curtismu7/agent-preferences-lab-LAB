@@ -172,7 +172,7 @@ describe("preference gate tab", () => {
 describe("diagram tab", () => {
   it("draws the boxes from /api/diagram and Simulate highlights a step; Reset clears it", async () => {
     await ready();
-    await userEvent.click(screen.getByRole("tab", { name: "Diagram" }));
+    await userEvent.click(screen.getByRole("link", { name: "Diagram" }));
     expect(await screen.findByText("Tool boundary gate")).toBeInTheDocument();
     expect(calls.some((c) => c.url.startsWith("/api/diagram?vertical=retail"))).toBe(true);
     expect(screen.getByTestId("banner")).toBeInTheDocument();
@@ -187,9 +187,9 @@ describe("diagram tab", () => {
 describe("talk track and presenter mode", () => {
   it("lists the talk track; presenter mode keeps the banner and shows the say-text; Esc leaves", async () => {
     await ready();
-    await userEvent.click(screen.getByRole("tab", { name: "Talk track" }));
+    await userEvent.click(screen.getByRole("link", { name: "Talk track" }));
     expect(screen.getByTestId("talk-track-list")).toHaveTextContent("Everything is simulated.");
-    await userEvent.click(screen.getByRole("tab", { name: "Preference gate" }));
+    await userEvent.click(screen.getByRole("link", { name: "Preference gate" }));
     await userEvent.keyboard("p");
     expect(await screen.findByTestId("presenter-say")).toHaveTextContent("The user sets what their agent may do.");
     expect(screen.getByTestId("banner")).toHaveTextContent(/^SIMULATED/);
@@ -217,7 +217,7 @@ describe("banner visibility on every tab, presenter mode and hosted mode", () =>
   it("is visible (not hidden, not display:none) on every tab and in presenter mode", async () => {
     await ready();
     for (const name of ["Diagram", "Talk track"]) {
-      await userEvent.click(screen.getByRole("tab", { name }));
+      await userEvent.click(screen.getByRole("link", { name }));
       expect(screen.getByTestId("banner")).toBeVisible();
     }
   });
@@ -252,10 +252,16 @@ describe("links from the content pack: /#scenario-<id>", () => {
 });
 
 describe("accessibility structure and display safety", () => {
-  it("has one main landmark, one banner status inside the header, and a tabpanel that is not the main", async () => {
+  it("has one main landmark; the shell bar comes first, then main with the banner as its first child", async () => {
     await ready();
     expect(screen.getAllByRole("main")).toHaveLength(1);
-    expect(document.querySelector("header [role=status]")).not.toBeNull();
-    expect(document.querySelector('[role=tabpanel]')).not.toBeNull();
+    const root = document.querySelector(".app");
+    expect(root.firstElementChild.matches("header.shell-bar")).toBe(true);
+    expect(root.firstElementChild.nextElementSibling).toBe(screen.getByRole("main"));
+    expect(screen.getByRole("main").firstElementChild).toBe(screen.getByTestId("banner"));
+    expect(document.querySelector("header.shell-bar .shell-right")).not.toBeNull(); // the TopMenu sits in the bar
+    expect(screen.getByTestId("mode-badge")).toHaveTextContent("Mock");
+    expect(screen.getByRole("link", { name: "Preference gate" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Diagram" })).not.toHaveAttribute("aria-current");
   });
 });

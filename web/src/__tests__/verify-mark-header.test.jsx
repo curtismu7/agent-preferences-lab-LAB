@@ -12,7 +12,7 @@ function withShelf(payload) {
     return { ok: false, status: 404, json: async () => ({}) };
   });
 }
-const loaded = async () => { await screen.findByRole("tablist"); return within(await screen.findByTestId("top-menu")); };
+const loaded = async () => { await screen.findByRole("navigation", { name: "Lab sections" }); return within(await screen.findByTestId("top-menu")); };
 
 beforeEach(() => { window.location.hash = ""; });
 afterEach(() => { vi.restoreAllMocks(); });

@@ -9,6 +9,7 @@ export function Hops({ hops, traceId }) {
   return (
     <section aria-label="Mock hops with traceparent" data-testid="hops">
       <h3>Hops (W3C traceparent) <span className="muted">trace {traceId}</span></h3>
+      <div className="hops-grid">
       {hops.map((h) => (
         <details key={h.n} open={h.n === 1}>
           <summary>{h.n}. {h.label}</summary>
@@ -16,6 +17,7 @@ export function Hops({ hops, traceId }) {
           <p className="muted">Response</p><Json value={h.response} label={`Response of hop ${h.n}`} />
         </details>
       ))}
+      </div>
     </section>
   );
 }
@@ -54,7 +56,7 @@ function PreferenceEditor({ current, onSaved }) {
   };
   return (
     <section className="panel" aria-labelledby="pref-h" data-testid="pref-editor">
-      <h2 id="pref-h">Your agent preferences</h2>
+      <h2 id="pref-h"><span className="step-num" aria-hidden="true">2</span>Your agent preferences</h2>
       <p className="muted">What your AI agent may do. These drive the gate on every agent tool call — this is the mock of the agentPreferences user attribute.</p>
       <fieldset>
         <legend>Allowed action tiers</legend>
@@ -92,7 +94,7 @@ function ProtectPanel({ detected, detectedRule, onEvaluated }) {
   };
   return (
     <section className="panel" aria-labelledby="protect-h" data-testid="protect-panel">
-      <h2 id="protect-h">Session start: mock Protect evaluation</h2>
+      <h2 id="protect-h"><span className="step-num" aria-hidden="true">3</span>Session start: mock Protect evaluation</h2>
       <p className="muted">Once per session the browser sends Signals; bot detection names the agent type (rules 660-674). The result flags the session for every later agent call. MOCK — no Signals SDK, no Protect tenant.</p>
       {detected && <p className="tag tag--warn" data-testid="detection-flag">Session flagged: {visible(detectedRule?.detectedRuleName || "an AI agent was detected")}</p>}
       {!detected && <p className="tag tag--ok">Session clear: no agent detected</p>}
@@ -121,7 +123,7 @@ function ToolCall({ tools, onResult }) {
   };
   return (
     <section className="panel" aria-labelledby="call-h" data-testid="tool-call">
-      <h2 id="call-h">Call the tool boundary</h2>
+      <h2 id="call-h"><span className="step-num" aria-hidden="true">4</span>Call the tool boundary</h2>
       <p className="muted">One agent-originated tool call: the gate measures it against your preferences and the session detection flag.</p>
       <label htmlFor="call-tool">Tool</label>
       <select id="call-tool" value={tool} onChange={(e) => { setTool(e.target.value); setAmount(""); }}>
@@ -151,7 +153,7 @@ function ApprovalPanel({ onChanged, refreshSignal }) {
   };
   return (
     <section className="panel" aria-labelledby="hitl-h" data-testid="approval-panel">
-      <h2 id="hitl-h">Human approval (HITL)</h2>
+      <h2 id="hitl-h"><span className="step-num" aria-hidden="true">6</span>Human approval (HITL)</h2>
       <p className="muted">Blocked-but-approvable calls land here as challenges. Approval is a single-use receipt: the retried call passes once.</p>
       {challenges.pending.length === 0 && <p className="muted" data-testid="no-pending">No pending challenges.</p>}
       <ul className="challenges" data-testid="challenge-list">
@@ -217,24 +219,24 @@ export default function PreferencesGate({ story, resetSignal, requestedId, onSel
   return (
     <div className="gate">
       <section className="panel" aria-labelledby="sc-h">
-        <h2 id="sc-h">Scenarios</h2>
+        <h2 id="sc-h"><span className="step-num" aria-hidden="true">1</span>Scenarios</h2>
         <div className="seg" role="group" aria-label="Scenario">
           {story.scenarios.map((s) => <button key={s.id} type="button" aria-pressed={s.id === id} onClick={() => { setId(s.id); if (onSelect) onSelect(s.id); }}>{s.title}</button>)}
         </div>
         <p className="lesson" data-testid="lesson">{scenario.lesson}</p>
       </section>
+      {prefs && <PreferenceEditor current={prefs} onSaved={(p) => setPrefsState(p)} />}
+      <ProtectPanel detected={detected.detectedAgent} detectedRule={detected.detectedRule} onEvaluated={(res) => setDetected({ detectedAgent: res.body.detectedAgent, detectedRule: res.body.botDetection })} />
+      <ToolCall tools={story.tools} onResult={(r) => setRun(r)} />
       <section className="panel" aria-labelledby="res-h">
-        <h2 id="res-h">Gate result</h2>
+        <h2 id="res-h"><span className="step-num" aria-hidden="true">5</span>Gate result</h2>
         {fail && <p className="field-error" role="alert">{fail}</p>}
         <Verdict run={run} />
         {run && <Hops hops={run.hops} traceId={run.traceId} />}
       </section>
-      {prefs && <PreferenceEditor current={prefs} onSaved={(p) => setPrefsState(p)} />}
-      <ProtectPanel detected={detected.detectedAgent} detectedRule={detected.detectedRule} onEvaluated={(res) => setDetected({ detectedAgent: res.body.detectedAgent, detectedRule: res.body.botDetection })} />
-      <ToolCall tools={story.tools} onResult={(r) => setRun(r)} />
       <ApprovalPanel onChanged={() => {}} refreshSignal={run} />
       <section className="panel" aria-labelledby="prefs-h">
-        <h2 id="prefs-h">Scenario preferences (decoded)</h2>
+        <h2 id="prefs-h"><span className="step-num" aria-hidden="true">7</span>Scenario preferences (decoded)</h2>
         <p className="tag tag--warn">{story.tokenLabel}</p>
         <Json value={{ preferences: scenario.preferences, tool: scenario.tool, detectedAgent: scenario.detectedAgent }} label="Scenario input" testId="scenario-prefs" hot={["allowedActions", "maxAmount", "unknownAgentPolicy", "tool", "detectedAgent"]} />
         <h3>What we know, and how well</h3>

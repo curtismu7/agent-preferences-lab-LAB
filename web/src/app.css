@@ -18,7 +18,7 @@ code { font-family: var(--font-mono); font-size: var(--font-size-2xs); }
 .shell-bar .shell-right { margin-left: auto; } /* TopMenu renders .top-menu.shell-right; its own layout stays */
 @media (max-width: 600px) { .shell-bar { gap: 10px; padding: 10px 16px; } .shell-nav { order: 3; flex-basis: 100%; } }
 /* Page frame (section 3): one centred 1100px column; the simulation banner is its first child. */
-.page { max-width: 2200px; margin: 0 auto; padding: 12px 0 32px; }
+.page { max-width: 1600px; margin: 0 auto; padding: 12px 0 32px; }
 .banner { margin: 0 0 12px; padding: 8px 16px; font-size: var(--font-size-sm); color: var(--th-status-warning-text); background: var(--th-status-warning-bg); border: 1px solid var(--th-status-warning); border-radius: var(--radius-md); }
 .page > .intro { margin: 0 0 12px; }
 .intro { margin: 0; max-width: 70ch; color: var(--th-text-muted); font-size: var(--font-size-sm); line-height: 1.45; }
@@ -46,7 +46,20 @@ textarea { width: 100%; font-family: var(--font-mono); display: block; margin: 4
 select:focus-visible, textarea:focus-visible, summary:focus-visible, pre:focus-visible { outline: 2px solid var(--th-status-info); outline-offset: 2px; }
 label { display: block; font-size: var(--font-size-sm); font-weight: 600; margin-top: 6px; }
 label.inline { display: inline-flex; margin-top: 0; font-weight: 400; }
-.gate, .posture { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); align-items: start; }
+/* Gate: vertical story flow (numbered panels top to bottom), not an auto-fit mosaic (UI-RELAYOUT-PATTERN.md). */
+.gate, .posture { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.gate > .panel, .gate > section { min-width: 0; }
+/* Paired supporting panels share one row; stack when narrow. */
+.gate .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.gate .duo > .panel { margin: 0; }
+@media (max-width: 900px) { .gate .duo { grid-template-columns: 1fr; } }
+/* Numbered step badge next to panel headings. */
+.step-num { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent-gradient); color: var(--on-accent); font: 700 var(--font-size-2xs) var(--font-mono);
+  margin-right: 8px; vertical-align: 2px; }
+/* Hops: 2-col grid under the verdict instead of a single-column accordion stack. */
+.hops-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-top: 12px; }
+@media (max-width: 900px) { .hops-grid { grid-template-columns: 1fr; } }
 .posture > .panel--warn { grid-column: 1 / -1; }
 .panel { border: 1px solid var(--th-border); background: var(--th-bg-card); border-radius: var(--radius-lg); padding: 12px 14px; min-width: 0; }
 .panel h2 { margin: 0 0 8px; font-size: var(--font-size-lg); }

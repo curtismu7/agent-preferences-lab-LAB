@@ -11,7 +11,7 @@ The user sets what their AI agent is allowed to do; a mock tool boundary enforce
 
 Mock only. Every host ends in `.example`, and the app makes no outbound network request (a netguard blocks them and tests prove it). It needs no tenant and no credentials. Decision reasons are shown raw, so a visitor sees exactly which preference decided.
 
-**Status: built.** Tabs: Preference gate (scenario walkthrough, live preference editor, mock Protect panel, tool-call panel, HITL approval panel), Diagram (ReactFlow from `/api/diagram`: movable boxes, Simulate, speed, Reset), Talk track. Presenter mode (`P`, `Esc` leaves) keeps the simulation banner.
+**Status: built.** Tabs: Preference gate (scenario walkthrough, live preference editor, mock Protect panel, tool-call panel, HITL approval panel), Diagram (ReactFlow from `/api/diagram`: movable boxes, Simulate, speed, Reset), Talk track. Presenter mode (`P`, `Esc` leaves). The page opens on a MOCK or REAL modal that says what is simulated (once per mode per browser session).
 
 ## Run
 

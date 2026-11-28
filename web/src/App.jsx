@@ -4,6 +4,7 @@ import DiagramTab from "./components/DiagramTab";
 import TalkTrack from "./components/TalkTrack";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu";
 import VerifyMark from "./components/VerifyMark.jsx";
+import ModeModal from "./mode-modal/ModeModal.jsx";
 import { getJson, resetWorkspace, setMode } from "./api";
 
 export const TABS = [
@@ -11,12 +12,16 @@ export const TABS = [
   { id: "diagram", label: "Diagram" },
   { id: "talk", label: "Talk track" },
 ];
-// The banner is never blank and never claims "not hosted" before it knows: until /api/info or /api/scenarios answers (or if both fail)
-// it says both, honestly.
+// The Real-or-mock modal's lines (it replaced the simulation banner and keeps its three states). It never claims "not hosted" before it knows:
+// until /api/info or /api/scenarios answers (or if both fail) the Mock line says it could be either. Real changes only the mode: the preferences,
+// the Protect signal and the tool boundary stay mock (the server answers simulated: true in both modes).
 const TAIL = "Nothing here calls a real gateway, identity provider or tenant.";
-export const BANNER_UNKNOWN = `SIMULATED / HOSTED SIMULATION: mock preferences, a mock Protect signal and a mock tool boundary. ${TAIL}`;
-const BANNER_LOCAL = `SIMULATED: mock preferences, a mock Protect signal and a mock tool boundary. ${TAIL}`;
-const BANNER_HOSTED = `HOSTED SIMULATION: mock preferences, a mock Protect signal and a mock tool boundary. ${TAIL}`;
+export const MODE_LINES = {
+  mock: `Everything on this page is simulated: mock preferences, a mock Protect signal and a mock tool boundary. ${TAIL}`,
+  hosted: `Hosted and simulated: mock preferences, a mock Protect signal and a mock tool boundary. ${TAIL}`,
+  unknown: `Simulated, on the local or the hosted build (not known yet): mock preferences, a mock Protect signal and a mock tool boundary. ${TAIL}`,
+  real: `Real mode is set, but the preferences, the Protect signal and the tool boundary on this page are still mock. ${TAIL}`,
+};
 const THEMES = ["auto", "light", "dark"];
 
 const hashParts = () => {
@@ -76,7 +81,7 @@ export default function App() {
   }, []);
 
   const hosted = story ? !!story.hosted : info ? !!info.hosted : null;
-  const banner = story ? story.banner : hosted === true ? BANNER_HOSTED : hosted === false ? BANNER_LOCAL : BANNER_UNKNOWN;
+  const mock = hosted === true ? MODE_LINES.hosted : hosted === false ? MODE_LINES.mock : MODE_LINES.unknown;
   return (
     <div className={`app${presenter ? " app--presenter" : ""}`}>
       <header className="shell-bar">
@@ -113,7 +118,6 @@ export default function App() {
         </TopMenu>
       </header>
       <main className="page">
-        <p className="banner" role="status" data-testid="banner">{banner}</p>
         {error && <p className="app-error" role="alert">Could not load the lab ({error}). Is the server running?</p>}
         <p className="sr-only" role="status" aria-live="polite">{resetMsg}</p>
         {!presenter && story && <p className="intro">{story.intro}</p>}
@@ -132,6 +136,7 @@ export default function App() {
           )}
         </div>
       </main>
+      <ModeModal mode={info?.mode === "real" ? "real" : "mock"} lines={{ mock, real: MODE_LINES.real }} storageKey="aplab-mode" />
     </div>
   );
 }

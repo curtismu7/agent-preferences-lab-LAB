@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeEach, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import App, { BANNER_UNKNOWN } from "./App";
+import App, { MODE_LINES } from "./App";
 import { labelOffsets } from "./components/PatternDiagram";
 import { setJsonView } from "./components/JsonPane";
 
@@ -95,14 +95,16 @@ function mockFetch() {
     return json({}, 404);
   });
 }
-beforeEach(() => { override = {}; mockFetch(); window.location.hash = ""; setJsonView("form"); });
+beforeEach(() => { override = {}; mockFetch(); window.location.hash = ""; setJsonView("form"); sessionStorage.clear(); });
+afterEach(() => sessionStorage.clear());
 
 const ready = async () => { render(<App />); await screen.findByText("Permitted: read tool, read allowed"); await screen.findByTestId("verdict"); };
 
 describe("shell", () => {
-  it("shows the banner, the mode, and sends X-Workspace on API calls", async () => {
+  it("opens on the MOCK modal (simulated, nothing calls a real tenant), shows the mode, and sends X-Workspace on API calls", async () => {
     await ready();
-    expect(screen.getByTestId("banner")).toHaveTextContent(/^SIMULATED/);
+    expect(screen.getByTestId("mode-modal")).toHaveAttribute("data-mode", "mock");
+    expect(screen.getByTestId("mode-modal")).toHaveTextContent(/^MOCK.*simulated.*Nothing here calls a real gateway, identity provider or tenant\./);
     expect(screen.getByTestId("mode-select")).toHaveValue("mock");
     const ev = calls.find((c) => c.url === "/api/mcp/tool");
     expect(ev.opts.headers["x-workspace"]).toMatch(/^[a-z0-9-]{1,40}$/);
@@ -175,7 +177,6 @@ describe("diagram tab", () => {
     await userEvent.click(screen.getByRole("link", { name: "Diagram" }));
     expect(await screen.findByText("Tool boundary gate")).toBeInTheDocument();
     expect(calls.some((c) => c.url.startsWith("/api/diagram?vertical=retail"))).toBe(true);
-    expect(screen.getByTestId("banner")).toBeInTheDocument();
     expect(screen.getByLabelText(/Step time/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /simulate/i }));
     expect(await screen.findByTestId("pattern-now")).toHaveTextContent("Step 1: tools/call");
@@ -185,23 +186,22 @@ describe("diagram tab", () => {
 });
 
 describe("talk track and presenter mode", () => {
-  it("lists the talk track; presenter mode keeps the banner and shows the say-text; Esc leaves", async () => {
+  it("lists the talk track; presenter mode keeps the mode modal and shows the say-text; Esc leaves", async () => {
     await ready();
     await userEvent.click(screen.getByRole("link", { name: "Talk track" }));
     expect(screen.getByTestId("talk-track-list")).toHaveTextContent("Everything is simulated.");
     await userEvent.click(screen.getByRole("link", { name: "Preference gate" }));
     await userEvent.keyboard("p");
     expect(await screen.findByTestId("presenter-say")).toHaveTextContent("The user sets what their agent may do.");
-    expect(screen.getByTestId("banner")).toHaveTextContent(/^SIMULATED/);
+    expect(screen.getByTestId("mode-modal")).toHaveTextContent(/^MOCK/);
     expect(document.querySelector(".app--presenter")).not.toBeNull();
     await userEvent.keyboard("{Escape}");
     expect(document.querySelector(".app--presenter")).toBeNull();
   });
-  it("the hosted build says HOSTED SIMULATION in the banner", async () => {
-    const orig = STORY.banner;
-    STORY.banner = "HOSTED SIMULATION: x"; STORY.hosted = true;
-    try { render(<App />); await waitFor(() => expect(screen.getByTestId("banner")).toHaveTextContent(/^HOSTED SIMULATION/)); }
-    finally { STORY.banner = orig; STORY.hosted = false; }
+  it("the hosted build says hosted in the modal", async () => {
+    STORY.hosted = true;
+    try { render(<App />); await waitFor(() => expect(screen.getByTestId("mode-modal")).toHaveTextContent(MODE_LINES.hosted)); }
+    finally { STORY.hosted = false; }
   });
 });
 
@@ -213,26 +213,48 @@ describe("diagram edge labels", () => {
   });
 });
 
-describe("banner visibility on every tab, presenter mode and hosted mode", () => {
-  it("is visible (not hidden, not display:none) on every tab and in presenter mode", async () => {
+describe("the mode modal: every state the old banner had, and no banner left", () => {
+  it("is the only mode label: no banner element or .banner, on any tab", async () => {
     await ready();
     for (const name of ["Diagram", "Talk track"]) {
       await userEvent.click(screen.getByRole("link", { name }));
-      expect(screen.getByTestId("banner")).toBeVisible();
+      expect(screen.queryByTestId("banner")).toBeNull();
+      expect(document.querySelector(".banner")).toBeNull();
     }
   });
-  it("hosted: shows HOSTED SIMULATION from /api/info even before /api/scenarios answers, never plain SIMULATED", async () => {
+  it("closes on Got it, stays closed after a same-session remount, and is shown again for a mode switch", async () => {
+    const { unmount } = render(<App />);
+    fireEvent.click(await screen.findByTestId("mode-modal-ok"));
+    expect(screen.queryByTestId("mode-modal")).toBeNull();
+    unmount();
+    await ready();
+    expect(screen.queryByTestId("mode-modal")).toBeNull();
+  });
+  it("hosted: says hosted from /api/info even before /api/scenarios answers, never the plain local line", async () => {
     override.info = async () => ({ ok: true, status: 200, json: async () => ({ mode: "mock", simulated: true, hosted: true }) });
     override.scenarios = () => new Promise(() => {});
     render(<App />);
-    await waitFor(() => expect(screen.getByTestId("banner")).toHaveTextContent(/^HOSTED SIMULATION/));
-    expect(screen.getByTestId("banner")).toBeVisible();
+    await waitFor(() => expect(screen.getByTestId("mode-modal")).toHaveTextContent(MODE_LINES.hosted));
+    expect(screen.getByTestId("mode-modal")).toHaveAttribute("data-mode", "mock");
   });
-  it("while nothing has answered, and when both calls fail, the banner says both and stays visible", async () => {
+  it("while nothing has answered, and when both calls fail, the modal says MOCK and that it could be the local or the hosted build", async () => {
     override.info = () => Promise.reject(new Error("down"));
     override.scenarios = () => Promise.reject(new Error("down"));
     render(<App />);
-    expect(await screen.findByTestId("banner")).toHaveTextContent(BANNER_UNKNOWN);
+    const modal = await screen.findByTestId("mode-modal");
+    expect(modal).toHaveTextContent(MODE_LINES.unknown);
+    expect(modal).toHaveTextContent(/local or the hosted/);
+    expect(modal).toHaveAttribute("data-mode", "mock");
+  });
+  it("Real: MOCK until /api/info answers, then REAL, with the line that says the page is still mock", async () => {
+    let release;
+    const held = new Promise((r) => { release = r; });
+    override.info = () => held;
+    render(<App />);
+    expect(await screen.findByTestId("mode-modal")).toHaveAttribute("data-mode", "mock");
+    release({ ok: true, status: 200, json: async () => ({ mode: "real", simulated: true, hosted: false, realAvailable: true }) });
+    await waitFor(() => expect(screen.getByTestId("mode-modal")).toHaveAttribute("data-mode", "real"));
+    expect(screen.getByTestId("mode-modal")).toHaveTextContent(/^REAL.*still mock.*Nothing here calls a real gateway/);
   });
 });
 
@@ -252,13 +274,13 @@ describe("links from the content pack: /#scenario-<id>", () => {
 });
 
 describe("accessibility structure and display safety", () => {
-  it("has one main landmark; the shell bar comes first, then main with the banner as its first child", async () => {
+  it("has one main landmark; the shell bar comes first, then main with no banner in it", async () => {
     await ready();
     expect(screen.getAllByRole("main")).toHaveLength(1);
     const root = document.querySelector(".app");
     expect(root.firstElementChild.matches("header.shell-bar")).toBe(true);
     expect(root.firstElementChild.nextElementSibling).toBe(screen.getByRole("main"));
-    expect(screen.getByRole("main").firstElementChild).toBe(screen.getByTestId("banner"));
+    expect(screen.getByRole("main").querySelector(".banner, [data-testid=banner]")).toBeNull();
     expect(document.querySelector("header.shell-bar .shell-right")).not.toBeNull(); // the TopMenu sits in the bar
     expect(screen.getByTestId("mode-badge")).toHaveTextContent("Mock");
     expect(screen.getByRole("link", { name: "Preference gate" })).toHaveAttribute("aria-current", "page");
